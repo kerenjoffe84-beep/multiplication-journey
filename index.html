@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="he" dir="rtl"><head>
+<title>מסע הכפל</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&family=Secular+One&display=swap">
+<style>
+/* Layout: one column, three screens (home, play, summary). Each factor 1-10 owns a planet colour, used in the map, the chips, the equation and the dot picture, so the same number always looks the same. Single dark space look by choice. */
+:root{
+  --bg:#0a0f24; --panel:#131a3a; --panel2:#1c2552; --line:#2b3668;
+  --fg:#eef1ff; --mute:#a3aedb; --sun:#ffc23d; --sun-ink:#201600;
+  --ok:#3ddc97; --bad:#ff4d6d; --warn:#ffd166;
+  --n1:#a9b4d6; --n2:#ff7a59; --n3:#ffb347; --n4:#ffe14d; --n5:#7bed9f;
+  --n6:#2ed8c3; --n7:#4fb4ff; --n8:#908cff; --n9:#d58bff; --n10:#ff7eb6;
+  --display:'Secular One','Rubik',system-ui,sans-serif;
+  --body:'Rubik',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background-color:var(--bg);
+  background-image:
+    radial-gradient(1px 1px at 18px 34px,rgba(255,255,255,.55),transparent),
+    radial-gradient(1px 1px at 96px 120px,rgba(255,255,255,.4),transparent),
+    radial-gradient(1.5px 1.5px at 150px 60px,rgba(255,255,255,.5),transparent),
+    radial-gradient(1px 1px at 60px 170px,rgba(255,255,255,.35),transparent);
+  background-size:180px 200px;
+  color:var(--fg); font-family:var(--body); font-size:16px; line-height:1.5;
+  padding-block:20px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.wrap{max-width:520px;margin-inline:auto}
+h1,h2{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance}
+h1{font-size:clamp(30px,8vw,40px);line-height:1.15}
+h2{font-size:20px}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.screen[hidden]{display:none}
+.stack{display:flex;flex-direction:column;gap:22px}
+.mute{color:var(--mute)}
+.sub{font-size:15px}
+
+/* home */
+.top{display:flex;flex-direction:column;gap:6px}
+.streak{display:inline-flex;align-items:center;gap:8px;color:var(--mute);font-size:15px}
+.streak b{color:var(--sun);font-family:var(--display);font-weight:400;font-size:18px}
+.chips{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.chip{background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.chip .planet{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:24px;color:#0a0f24;background:radial-gradient(circle at 32% 28%,#fff9,transparent 45%),var(--pc)}
+.chip small{font-size:12px;color:var(--mute);white-space:nowrap}
+.chip[aria-pressed="true"]{border-color:var(--pc);background:var(--panel2);box-shadow:0 0 0 2px var(--pc) inset}
+.chip[aria-pressed="true"] small{color:var(--fg)}
+.note{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:15px}
+.note b{color:var(--warn)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.seg button{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:10px 6px;min-height:48px;font-size:15px}
+.seg button[aria-pressed="true"]{border-color:var(--sun);background:var(--panel2);color:var(--sun)}
+.seg b{display:block;font-family:var(--display);font-weight:400;font-size:20px;line-height:1.1}
+.btn{background:var(--sun);color:var(--sun-ink);border:0;border-radius:16px;min-height:56px;padding:0 22px;font-family:var(--display);font-size:22px;width:100%}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--fg);border:2px solid var(--line)}
+.btn:active{transform:translateY(1px)}
+.label{font-size:14px;color:var(--mute);margin-bottom:8px}
+
+/* map */
+.mapbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
+.maphead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px}
+.map{display:grid;grid-template-columns:repeat(11,1fr);gap:3px}
+.map span{aspect-ratio:1;border-radius:6px;display:grid;place-items:center;font-size:11px;font-weight:700;min-width:0}
+.map .h{font-family:var(--display);font-weight:400;font-size:13px;border-radius:0}
+.map .c0{background:transparent;border:1px dashed var(--line)}
+.map .c1{background:var(--bad);color:#2a0008}
+.map .c2{background:var(--warn);color:#2a1d00}
+.map .c3{background:var(--ok);color:#00261a}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:12px;font-size:13px;color:var(--mute)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;margin-inline-end:5px}
+.sync{font-size:13px;color:var(--mute);text-align:center}
+
+/* play */
+.bar-top{display:flex;align-items:center;gap:12px}
+.quit{background:transparent;border:2px solid var(--line);border-radius:12px;min-height:40px;padding:0 12px;font-size:14px;color:var(--mute);white-space:nowrap}
+.prog{flex:1;min-width:0}
+.bar{height:10px;background:var(--panel2);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;width:var(--p,0%);background:linear-gradient(90deg,var(--n7),var(--n6));transition:width .3s}
+.prog small{display:flex;justify-content:space-between;gap:8px;margin-top:4px;font-size:13px;color:var(--mute)}
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px 14px;display:flex;flex-direction:column;align-items:center;gap:14px;min-height:190px;justify-content:center;transition:background .2s,border-color .2s}
+.stage.ok{border-color:var(--ok);background:#10302b}
+.stage.bad{border-color:var(--bad)}
+.badge{font-size:13px;padding:3px 12px;border-radius:99px;background:var(--panel2);color:var(--warn);border:1px solid var(--line)}
+.eq{display:flex;align-items:center;justify-content:center;gap:clamp(8px,3vw,18px);font-family:var(--display);font-size:clamp(46px,15vw,76px);line-height:1}
+.eq span{color:var(--mute)}
+.eq .res{min-width:1.6em;text-align:center;border-bottom:4px solid var(--line);padding-bottom:4px;color:var(--fg)}
+.eq .res.q{color:var(--mute)}
+.eq .res.show{color:var(--sun);border-color:var(--sun)}
+.msg{font-size:18px;min-height:1.5em;text-align:center}
+.msg.okc{color:var(--ok);font-weight:700}
+.dots{display:flex;flex-direction:column;gap:4px;margin-top:2px}
+.drow{display:flex;gap:4px}
+.drow.g5{margin-bottom:7px}
+.dots i{width:clamp(11px,3.4vw,17px);aspect-ratio:1;border-radius:50%;background:var(--c);display:block}
+.dots i.g5{margin-inline-end:6px}
+.copy{display:flex;gap:8px;align-items:center;font-size:16px}
+.copy .box{min-width:4.5ch;text-align:center;font-family:var(--display);font-size:28px;border:2px dashed var(--sun);border-radius:12px;padding:2px 12px;letter-spacing:2px}
+.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.choices button{background:var(--panel2);border:2px solid var(--line);border-radius:18px;min-height:clamp(84px,16vh,112px);font-family:var(--display);font-size:clamp(36px,11vw,52px);color:var(--fg)}
+.choices button:active{background:var(--line);border-color:var(--sun)}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pad button{background:var(--panel2);border:1px solid var(--line);border-radius:16px;min-height:clamp(52px,9vh,64px);font-family:var(--display);font-size:28px}
+.pad button:active{background:var(--line)}
+.pad .go{background:var(--sun);color:var(--sun-ink);border-color:var(--sun)}
+.pad .del{font-size:22px;color:var(--mute)}
+.idk{background:transparent;border:0;color:var(--mute);text-decoration:underline;font-size:15px;padding:10px;align-self:center}
+
+/* summary */
+.score{font-family:var(--display);font-size:clamp(54px,18vw,84px);line-height:1;color:var(--sun)}
+.score small{font-size:.4em;color:var(--mute)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
+.panel h2{margin-bottom:6px}
+.eqs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.eqs span{direction:ltr;font-family:var(--display);font-size:20px;background:var(--panel2);border-radius:10px;padding:4px 12px}
+.eqs span b{font-weight:400}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+</head><body>
+<div class="wrap" dir="rtl" lang="he" id="app">
+
+  <section class="screen stack" id="home">
+    <div class="top">
+      <h1>מסע הכפל של בר</h1>
+      <div class="streak" id="streak"></div>
+    </div>
+
+    <div>
+      <div class="label">לאילו כוכבים טסים היום? אפשר לבחור כמה</div>
+      <div class="chips" id="chips"></div>
+    </div>
+
+    <div class="note" id="due"></div>
+
+    <button class="btn" id="start" type="button">יוצאים לדרך</button>
+
+    <div class="mapbox">
+      <div class="maphead">
+        <h2>מפת הלוח</h2>
+        <span class="mute sub" id="closedCount"></span>
+      </div>
+      <div class="map" id="map" dir="ltr" role="img" aria-label="מפת לוח הכפל לפי מצב כל תרגיל"></div>
+      <div class="legend">
+        <span><i style="background:var(--ok)"></i>סגור</span>
+        <span><i style="background:var(--warn)"></i>בלמידה</span>
+        <span><i style="background:var(--bad)"></i>טעה, חוזר</span>
+        <span><i style="border:1px dashed var(--line)"></i>עוד לא נבדק</span>
+      </div>
+    </div>
+    <p class="sync" id="sync"></p>
+  </section>
+
+  <section class="screen stack" id="play" hidden>
+    <div class="bar-top">
+      <button class="quit" id="quit" type="button">יציאה</button>
+      <div class="prog">
+        <div class="bar"><i id="barfill"></i></div>
+        <small><span id="cnt"></span><span id="pend"></span></small>
+      </div>
+    </div>
+    <div class="stage" id="stage" aria-live="polite"></div>
+    <div class="choices" id="choices" dir="ltr" hidden></div>
+    <div class="pad" id="pad" dir="ltr">
+      <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+      <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+      <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+      <button type="button" class="del" data-k="del" aria-label="מחיקה">⌫</button>
+      <button type="button" data-k="0">0</button>
+      <button type="button" class="go" data-k="go" aria-label="בדיקה">✓</button>
+    </div>
+    <button class="idk" id="idk" type="button">לא יודע, תראה לי</button>
+  </section>
+
+  <section class="screen stack" id="done" hidden></section>
+</div>
+
+<script>
+(function(){
+  var LS='multiplication-journey-bar-v1', DB_PATH='progress/bar';
+  var app=document.getElementById('app');
+  document.documentElement.setAttribute('dir','rtl');
+  document.documentElement.setAttribute('lang','he');
+
+  function $(id){return document.getElementById(id);}
+  function pad2(n){return (n<10?'0':'')+n;}
+  function fmt(d){return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
+  function today(){return fmt(new Date());}
+  function keyOf(a,b){return Math.min(a,b)+'x'+Math.max(a,b);}
+  function col(n){return 'var(--n'+n+')';}
+  function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+  /* ---------- saved progress ---------- */
+  function fresh(){return {v:1,facts:{},days:[],focus:[7],len:16,u:0};}
+  function norm(d){
+    var s=fresh();
+    if(d&&typeof d==='object'){
+      s.facts=(d.facts&&typeof d.facts==='object')?d.facts:{};
+      s.days=Array.isArray(d.days)?d.days.slice(-400):[];
+      var f=Array.isArray(d.focus)?d.focus.filter(function(n){return n>=1&&n<=10;}):[];
+      if(f.length)s.focus=f;
+      if([10,16,24].indexOf(d.len)>=0)s.len=d.len;
+      s.u=+d.u||0;
+    }
+    return s;
+  }
+  var S=fresh();
+  try{var raw=localStorage.getItem(LS);if(raw)S=norm(JSON.parse(raw));}catch(e){}
+  function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}}
+
+  var dbRef=null,saving=false,dirty=false,timer=null,syncState='local';
+  function setStatus(){
+    var t={cloud:'ההתקדמות נשמרת ומחכה לבר גם מחר',local:'ההתקדמות נשמרת רק במכשיר הזה',error:'השמירה בענן לא הצליחה, ההתקדמות עדיין שמורה במכשיר הזה'};
+    var el=$('sync'); if(el)el.textContent=t[syncState];
+  }
+  function queueSave(){S.u=Date.now();saveLocal();dirty=true;clearTimeout(timer);timer=setTimeout(flush,900);}
+  function flush(){
+    clearTimeout(timer);
+    if(!dbRef||saving||!dirty)return Promise.resolve();
+    saving=true;dirty=false;
+    return dbRef.set(JSON.parse(JSON.stringify(S))).then(function(){syncState='cloud';})
+      .catch(function(e){syncState='error';if(e&&e.code==='unavailable'){dirty=true;}})
+      .then(function(){saving=false;setStatus();if(dirty)timer=setTimeout(flush,2000);});
+  }
+  document.addEventListener('visibilitychange',function(){if(document.hidden)flush();});
+
+  /* ---------- fact bookkeeping ----------
+     l: -  (no entry)  = never asked
+        0 = got it wrong, comes back
+        1 = right once, needs a correct answer on another day
+        2 = closed (right on two different days, no error since) */
+  function lvl(k){var f=S.facts[k];return f?f.l:-1;}
+  function recordFirst(k,ok){
+    var t=today(),f=S.facts[k],prev=f?f.l:-1;
+    if(S.days.indexOf(t)<0)S.days.push(t);
+    if(!ok){
+      if(!f)f={l:0,w:0};
+      f.l=0;f.w=(f.w||0)+1;f.wd=t;f.sd=t;
+      if(prev===2)sess.reopened[k]=1;
+    }else if(!f){
+      f={l:1,w:0,sd:t};
+    }else if(f.sd!==t){
+      f.l=Math.min(2,f.l+1);f.sd=t;
+      if(prev<2&&f.l===2)sess.closedNow[k]=1;
+    }
+    S.facts[k]=f;queueSave();
+  }
+  function recordRepeatWrong(k){
+    var f=S.facts[k]; if(f){f.l=0;f.wd=today();queueSave();}
+  }
+
+  /* ---------- home ---------- */
+  function streakDays(){
+    var set={};S.days.forEach(function(d){set[d]=1;});
+    var d=new Date(),c=0; if(!set[fmt(d)])d.setDate(d.getDate()-1);
+    while(set[fmt(d)]){c++;d.setDate(d.getDate()-1);}
+    return c;
+  }
+  function candidates(focus){
+    var seen={},out=[];
+    focus.forEach(function(n){for(var m=1;m<=10;m++){var k=keyOf(n,m);if(!seen[k]){seen[k]=1;out.push({key:k,a:n,b:m});}}});
+    return out;
+  }
+  function renderHome(){
+    var c=streakDays();
+    $('streak').innerHTML=c>0?('ימים ברצף <b>'+c+'</b>'):'היום מתחילים רצף חדש';
+
+    $('chips').innerHTML=[1,2,3,4,5,6,7,8,9,10].map(function(n){
+      var closed=0;for(var m=1;m<=10;m++)if(lvl(keyOf(n,m))>=2)closed++;
+      var on=S.focus.indexOf(n)>=0;
+      return '<button type="button" class="chip" data-n="'+n+'" aria-pressed="'+on+'" style="--pc:'+col(n)+'" aria-label="לוח '+n+', סגורים '+closed+' מתוך 10"><span class="planet">'+n+'</span><small>'+closed+'/10 סגורים</small></button>';
+    }).join('');
+
+    var cands=candidates(S.focus),shaky=0,learn=0;
+    cands.forEach(function(x){var l=lvl(x.key);if(l===0)shaky++;else if(l===1&&S.facts[x.key].sd!==today())learn++;});
+    var due=$('due');
+    if(!S.focus.length){due.innerHTML='בוחרים לפחות כוכב אחד כדי להתחיל.';}
+    else if(shaky>0){due.innerHTML='<b>'+shaky+'</b> '+(shaky===1?'תרגיל שבר טעה בו מחכה':'תרגילים שבר טעה בהם מחכים')+' לבדיקה בכוכבים שבחרת. הם יחזרו עד שייסגרו.';}
+    else if(learn>0){due.innerHTML=learn+' '+(learn===1?'תרגיל מחכה':'תרגילים מחכים')+' לתשובה נכונה נוספת כדי להיסגר.';}
+    else{due.innerHTML='אין תרגילים פתוחים בכוכבים האלה. אפשר להתקדם.';}
+    $('start').disabled=!S.focus.length;
+
+    var h='<span class="h"></span>';
+    for(var c1=1;c1<=10;c1++)h+='<span class="h" style="color:'+col(c1)+'">'+c1+'</span>';
+    var closedAll=0,seenKeys={};
+    for(var r=1;r<=10;r++){
+      h+='<span class="h" style="color:'+col(r)+'">'+r+'</span>';
+      for(var cc=1;cc<=10;cc++){
+        var k=keyOf(r,cc),l=lvl(k);
+        if(l>=2&&!seenKeys[k]){closedAll++;}
+        seenKeys[k]=1;
+        var sym=l>=2?'✓':(l===0?'!':'');
+        var name=['לא נבדק','טעה','בלמידה','סגור'][l+1];
+        h+='<span class="c'+(l+1)+'" title="'+r+'×'+cc+': '+name+'">'+sym+'</span>';
+      }
+    }
+    $('map').innerHTML=h;
+    $('closedCount').textContent='סגורים '+closedAll+' מתוך 55';
+    setStatus();
+  }
+
+  /* ---------- session ---------- */
+  var sess=null;
+  function startSession(){
+    var t=today(),cands=shuffle(candidates(S.focus));
+    var shaky=[],learnDue=[],learnToday=[],fr=[],closed=[];
+    cands.forEach(function(c){
+      var f=S.facts[c.key];
+      if(!f)fr.push(c);else if(f.l===0)shaky.push(c);
+      else if(f.l===1)(f.sd===t?learnToday:learnDue).push(c);else closed.push(c);
+    });
+    var L=35,pick=[];
+    function take(arr,max){while(arr.length&&pick.length<L&&max>0){pick.push(arr.shift());max--;}}
+    take(shaky,L);take(learnDue,L);take(fr,6);take(closed,3);take(learnToday,L);take(fr,L);take(closed,L);
+    var queue=shuffle(pick).map(function(c){return {key:c.key,a:c.a,b:c.b,rep:0};});
+    /* A round is always 35 exercises. When the chosen numbers hold fewer, the same exercises come around again as extra practice; they never change an exercise's level. */
+    while(queue.length<L&&cands.length){
+      shuffle(cands).forEach(function(c){if(queue.length<L)queue.push({key:c.key,a:c.a,b:c.b,rep:0,fill:true});});
+    }
+    sess={queue:queue,total:queue.length,done:0,firstOk:0,mistakes:{},closedNow:{},reopened:{},typed:'',phase:'ask',busy:false};
+    show('play');renderQ();
+  }
+  function insertAt(item,pos){sess.queue.splice(Math.min(pos,sess.queue.length),0,item);}
+  function eqHtml(it,res,cls){
+    return '<div class="eq" dir="ltr"><b style="color:'+col(it.a)+'">'+it.a+'</b><span>×</span><b style="color:'+col(it.b)+'">'+it.b+'</b><span>=</span><b class="res '+cls+'">'+res+'</b></div>';
+  }
+  function dotsHtml(a,b){
+    var h='<div class="dots" dir="ltr" style="--c:'+col(a)+'" aria-hidden="true">';
+    for(var r=0;r<a;r++){
+      h+='<div class="drow'+((r%5===4&&r<a-1)?' g5':'')+'">';
+      for(var c=0;c<b;c++)h+='<i'+((c%5===4&&c<b-1)?' class="g5"':'')+'></i>';
+      h+='</div>';
+    }
+    return h+'</div>';
+  }
+  function renderQ(){
+    var it=sess.queue[0]; if(!it){finish();return;}
+    sess.typed='';sess.phase='ask';sess.busy=false;
+    var pend=sess.queue.filter(function(x){return x.rep>0;}).length;
+    $('barfill').style.setProperty('--p',Math.round(100*sess.done/sess.total)+'%');
+    $('cnt').textContent='תרגיל '+Math.min(sess.done+1,sess.total)+' מתוך '+sess.total;
+    $('pend').textContent=pend?('חוזרים על טעות: '+pend):'';
+    var badge=it.rep>0?'<span class="badge">חוזרים על התרגיל הזה · עוד '+it.rep+' '+(it.rep===1?'פעם':'פעמים')+'</span>':'';
+    var st=$('stage');st.className='stage';
+    st.innerHTML=badge+eqHtml(it,'?','q')+'<div class="msg" id="msg"></div>';
+    sess.mode=pickMode(it);
+    if(sess.mode==='choice'){
+      var wrong=distract(it.a,it.b),opts=shuffle([it.a*it.b,wrong]);
+      $('choices').innerHTML=opts.map(function(v,i){return '<button type="button" data-c="'+v+'" aria-label="תשובה '+(i+1)+': '+v+'">'+v+'</button>';}).join('');
+      $('choices').hidden=false;$('pad').hidden=true;
+    }else{
+      $('choices').hidden=true;$('pad').hidden=false;
+      document.getElementById('msg').textContent='שאלה פתוחה: הקלד את התשובה';
+    }
+    $('idk').hidden=false;
+  }
+  /* Two answers per question. Open (typed) questions appear now and then, always for repeats after a mistake, and before an exercise can close, so a lucky 50% guess never counts. */
+  function pickMode(it){
+    if(it.rep>0)return 'open';
+    var f=S.facts[it.key];
+    if(f&&f.l===1&&f.sd!==today())return 'open';
+    return Math.random()<0.2?'open':'choice';
+  }
+  function distract(a,b){
+    var ans=a*b,c=[a*(b+1),a*(b-1),(a+1)*b,(a-1)*b,ans+10,ans-10,ans+2,ans-2];
+    var ok=c.filter(function(x){return x>0&&x!==ans&&x<=121;});
+    return shuffle(ok)[0];
+  }
+  function updateTyped(){
+    var it=sess.queue[0],res=document.querySelector('#stage .res');if(!res)return;
+    if(sess.phase==='ask'){res.textContent=sess.typed||'?';res.className='res '+(sess.typed?'':'q');}
+    else{var b=document.getElementById('copybox');if(b)b.textContent=sess.typed||' ';}
+  }
+  function press(k){
+    if(!sess||sess.busy)return;
+    if(sess.phase==='ask'&&sess.mode==='choice')return;
+    if(k==='del'){sess.typed=sess.typed.slice(0,-1);updateTyped();return;}
+    if(k==='go'){submit();return;}
+    if(sess.typed.length>=3)return;
+    sess.typed+=k;updateTyped();
+    if(sess.phase==='reveal'){
+      var ans=String(sess.queue[0].a*sess.queue[0].b);
+      if(sess.typed.length>=ans.length)submit();
+    }
+  }
+  function reveal(){
+    var it=sess.queue[0],ans=it.a*it.b;
+    sess.phase='reveal';sess.typed='';sess.busy=false;
+    var st=$('stage');st.className='stage bad';
+    st.innerHTML=eqHtml(it,ans,'show')+dotsHtml(it.a,it.b)+
+      '<div class="copy"><span>הקלד</span><b class="box" id="copybox">&nbsp;</b><span>כדי להמשיך</span></div>';
+    $('idk').hidden=true;$('choices').hidden=true;$('pad').hidden=false;
+  }
+  function submit(){
+    if(!sess||sess.busy)return;
+    var it=sess.queue[0],ans=it.a*it.b;
+    if(sess.phase==='ask'){
+      if(sess.mode==='choice'||!sess.typed)return;
+      grade(parseInt(sess.typed,10));
+    }else{
+      if(parseInt(sess.typed,10)===ans){
+        sess.busy=true;setTimeout(advanceWrong,450);
+      }else{
+        sess.typed='';updateTyped();
+        var b=document.getElementById('copybox');if(b){b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');}
+      }
+    }
+  }
+  function grade(val){
+    var it=sess.queue[0],ans=it.a*it.b;
+    {
+      var ok=val===ans;
+      if(it.rep===0&&!it.fill)recordFirst(it.key,ok);else if(!ok)recordRepeatWrong(it.key);
+      if(ok){
+        sess.busy=true;
+        if(sess.mode==='choice'){$('choices').hidden=true;}
+        var st=$('stage');st.className='stage ok';
+        st.querySelector('.res').textContent=ans;
+        st.querySelector('.res').className='res show';
+        document.getElementById('msg').className='msg okc';
+        document.getElementById('msg').textContent=['נכון!','יפה מאוד!','בדיוק!','מצוין!'][Math.floor(Math.random()*4)];
+        setTimeout(advanceOk,650);
+      }else{
+        var stg=$('stage');stg.classList.add('shake');
+        setTimeout(reveal,320);sess.busy=true;
+      }
+    }
+  }
+  function advanceOk(){
+    var it=sess.queue.shift();
+    if(it.rep===0){sess.done++;sess.firstOk++;}
+    else{it.rep--;if(it.rep>0)insertAt(it,4);}
+    renderQ();
+  }
+  function advanceWrong(){
+    var it=sess.queue.shift();
+    if(it.rep===0){sess.done++;sess.mistakes[it.key]=it;}
+    insertAt({key:it.key,a:it.a,b:it.b,rep:2},3);
+    renderQ();
+  }
+  function dontKnow(){
+    if(!sess||sess.busy||sess.phase!=='ask')return;
+    var it=sess.queue[0];
+    if(it.rep===0&&!it.fill)recordFirst(it.key,false);else recordRepeatWrong(it.key);
+    reveal();
+  }
+
+  function eqChips(map){
+    var ks=Object.keys(map);if(!ks.length)return '';
+    return '<div class="eqs">'+ks.map(function(k){
+      var p=k.split('x'),a=+p[0],b=+p[1];
+      return '<span><b style="color:'+col(a)+'">'+a+'</b> × <b style="color:'+col(b)+'">'+b+'</b> = '+(a*b)+'</span>';
+    }).join('')+'</div>';
+  }
+  function finish(){
+    flush();
+    var n=sess.total,ok=sess.firstOk,html='';
+    var mk=Object.keys(sess.mistakes),ck=Object.keys(sess.closedNow),rk=Object.keys(sess.reopened);
+    var line=ok===n?'כל התשובות נכונות מהפעם הראשונה!':(ok>=n*0.7?'טיסה טובה מאוד.':'עוד קצת תרגול והלוח שלך.');
+    html+='<div class="top"><h1>הנחיתה הצליחה</h1><p class="mute">'+line+'</p></div>';
+    html+='<div class="score">'+ok+'<small> מתוך '+n+' נכונים בפעם הראשונה</small></div>';
+    if(mk.length)html+='<div class="panel"><h2>יחזרו בפעם הבאה</h2><p class="mute sub">בר טעה בהם היום. הם ימשיכו לחזור עד שיעננה נכון בימים שונים.</p>'+eqChips(sess.mistakes)+'</div>';
+    if(ck.length)html+='<div class="panel"><h2>נסגרו היום</h2><p class="mute sub">נענו נכון בשני ימים שונים, בלי טעות באמצע.</p>'+eqChips(sess.closedNow)+'</div>';
+    if(rk.length)html+='<div class="panel"><h2>חזרו להיות פתוחים</h2><p class="mute sub">היו סגורים והפעם נענו לא נכון, אז יחזרו לבדיקה.</p>'+eqChips(sess.reopened)+'</div>';
+    html+='<button class="btn" id="again" type="button">עוד סיבוב</button><button class="btn ghost" id="home2" type="button">חזרה למפה</button><p class="sync" id="sync2"></p>';
+    $('done').innerHTML=html;
+    show('done');
+    var s2=$('sync2');if(s2){setTimeout(function(){var t={cloud:'ההתקדמות נשמרה',local:'ההתקדמות נשמרה במכשיר הזה',error:'ההתקדמות נשמרה במכשיר הזה'};s2.textContent=t[syncState];},600);}
+    sess=null;
+  }
+
+  /* ---------- screens and events ---------- */
+  function show(name){
+    ['home','play','done'].forEach(function(id){$(id).hidden=(id!==name);});
+    window.scrollTo(0,0);
+    if(name==='home')renderHome();
+    window.__screen=name;
+  }
+  app.addEventListener('click',function(e){
+    var t=e.target.closest('button');if(!t)return;
+    if(t.dataset.n){
+      var n=+t.dataset.n,i=S.focus.indexOf(n);
+      if(i>=0)S.focus.splice(i,1);else S.focus.push(n);
+      queueSave();renderHome();
+    }else if(t.dataset.len){S.len=+t.dataset.len;queueSave();renderHome();}
+    else if(t.id==='start'){startSession();}
+    else if(t.dataset.c!==undefined){if(sess&&!sess.busy&&sess.phase==='ask'&&sess.mode==='choice')grade(+t.dataset.c);}
+    else if(t.dataset.k!==undefined){press(t.dataset.k);}
+    else if(t.id==='idk'){dontKnow();}
+    else if(t.id==='quit'){sess=null;flush();show('home');}
+    else if(t.id==='again'){startSession();}
+    else if(t.id==='home2'){show('home');}
+  });
+  document.addEventListener('keydown',function(e){
+    if(window.__screen!=='play'||!sess)return;
+    if(sess.phase==='ask'&&sess.mode==='choice'){
+      if((e.key==='1'||e.key==='2')&&!sess.busy){var bs=document.querySelectorAll('#choices button');if(bs[+e.key-1])bs[+e.key-1].click();}
+      return;
+    }
+    if(e.key>='0'&&e.key<='9'){press(e.key);e.preventDefault();}
+    else if(e.key==='Backspace'){press('del');e.preventDefault();}
+    else if(e.key==='Enter'){press('go');e.preventDefault();}
+  });
+
+  show('home');
+
+  /* ---------- cloud copy (optional) ---------- */
+  (function(){
+    if(!window.claude||!window.claude.use)return;
+    window.claude.use('db').then(function(db){
+      if(!db)return;
+      dbRef=db.doc(DB_PATH);
+      return dbRef.get().then(function(snap){
+        if(snap.exists){
+          var d=JSON.parse(JSON.stringify(snap.data()));
+          if(d.v===1&&(d.u||0)>(S.u||0)&&!sess){S=norm(d);S.u=+d.u||0;saveLocal();}
+          else if((S.u||0)>(d.u||0)){dirty=true;}
+        }else if(S.u>0){dirty=true;}
+        syncState='cloud';
+        if(window.__screen==='home')renderHome();else setStatus();
+        if(dirty)flush();
+      });
+    }).catch(function(){syncState='error';setStatus();});
+  })();
+})();
+</script>
+
+</body></html>
