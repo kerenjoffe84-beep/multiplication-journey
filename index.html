@@ -63,6 +63,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btn.ghost{background:transparent;color:var(--fg);border:2px solid var(--line)}
 .btn:active{transform:translateY(1px)}
+a.btn{display:flex;align-items:center;justify-content:center;text-decoration:none;text-align:center}
 .label{font-size:14px;color:var(--mute);margin-bottom:8px}
 
 /* map */
@@ -159,6 +160,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
         <span><i style="border:1px dashed var(--line)"></i>עוד לא נבדק</span>
       </div>
     </div>
+    <a class="btn ghost" id="reportHome" target="_blank" rel="noopener">שליחת דוח בוואטסאפ</a>
     <p class="sync" id="sync"></p>
   </section>
 
@@ -260,6 +262,18 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
     var f=S.facts[k]; if(f){f.l=0;f.wd=today();queueSave();}
   }
 
+  /* ---------- report (WhatsApp) ---------- */
+  var REPORT_PHONE='972546856747';
+  function shortDate(d){var p=d.split('-');return p[2]+'/'+p[1];}
+  function reportHref(last){
+    var closed=0,shaky=[],learning=0;
+    Object.keys(S.facts).forEach(function(k){var l=S.facts[k].l;if(l>=2)closed++;else if(l===0)shaky.push(k.replace('x','×'));else learning++;});
+    var days=S.days.slice().sort().slice(-7).reverse().map(shortDate);
+    var t=['מסע הכפל של בר: דוח תרגול','ימים ברצף: '+streakDays(),'ימי תרגול אחרונים: '+(days.length?days.join(', '):'עוד לא תרגל'),'תרגילים סגורים: '+closed+' מתוך 55','בלמידה: '+learning,'תרגילים שבר טועה בהם: '+(shaky.length?shaky.join(', '):'אין כרגע')];
+    if(last)t.splice(1,0,'בסיבוב האחרון: '+last.ok+' מתוך '+last.n+' נכונים בפעם הראשונה');
+    return 'https://wa.me/'+REPORT_PHONE+'?text='+encodeURIComponent(t.join('\n'));
+  }
+
   /* ---------- home ---------- */
   function streakDays(){
     var set={};S.days.forEach(function(d){set[d]=1;});
@@ -290,6 +304,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
     else if(learn>0){due.innerHTML=learn+' '+(learn===1?'תרגיל מחכה':'תרגילים מחכים')+' לתשובה נכונה נוספת כדי להיסגר.';}
     else{due.innerHTML='אין תרגילים פתוחים בכוכבים האלה. אפשר להתקדם.';}
     $('start').disabled=!S.focus.length;
+    $('reportHome').href=reportHref();
 
     var h='<span class="h"></span>';
     for(var c1=1;c1<=10;c1++)h+='<span class="h" style="color:'+col(c1)+'">'+c1+'</span>';
@@ -473,7 +488,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
     if(mk.length)html+='<div class="panel"><h2>יחזרו בפעם הבאה</h2><p class="mute sub">בר טעה בהם היום. הם ימשיכו לחזור עד שיעננה נכון בימים שונים.</p>'+eqChips(sess.mistakes)+'</div>';
     if(ck.length)html+='<div class="panel"><h2>נסגרו היום</h2><p class="mute sub">נענו נכון בשני ימים שונים, בלי טעות באמצע.</p>'+eqChips(sess.closedNow)+'</div>';
     if(rk.length)html+='<div class="panel"><h2>חזרו להיות פתוחים</h2><p class="mute sub">היו סגורים והפעם נענו לא נכון, אז יחזרו לבדיקה.</p>'+eqChips(sess.reopened)+'</div>';
-    html+='<button class="btn" id="again" type="button">עוד סיבוב</button><button class="btn ghost" id="home2" type="button">חזרה למפה</button><p class="sync" id="sync2"></p>';
+    html+='<button class="btn" id="again" type="button">עוד סיבוב</button><a class="btn ghost" target="_blank" rel="noopener" href="'+reportHref({ok:ok,n:n})+'">שליחת דוח בוואטסאפ</a><button class="btn ghost" id="home2" type="button">חזרה למפה</button><p class="sync" id="sync2"></p>';
     $('done').innerHTML=html;
     show('done');
     var s2=$('sync2');if(s2){setTimeout(function(){var t={cloud:'ההתקדמות נשמרה',local:'ההתקדמות נשמרה במכשיר הזה',error:'ההתקדמות נשמרה במכשיר הזה'};s2.textContent=t[syncState];},600);}
